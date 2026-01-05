@@ -10,17 +10,28 @@ import { sessionStore } from './core/session';
 export function setupBot(bot: Telegraf<Context>) {
     // Middleware
     bot.use(async (ctx, next) => {
-        // Optional: Log requests or check session expiry globally
+        console.log('LOG: Middleware entered for update', ctx.update.update_id);
+        const start = Date.now();
         await next();
+        const ms = Date.now() - start;
+        console.log('LOG: Response time %sms', ms);
     });
 
     // COMMANDS
-    bot.start((ctx) => {
+    bot.start(async (ctx) => {
+        console.log('LOG: Handling /start command');
         const userId = ctx.from.id;
-        if (sessionStore.has(userId)) {
-            sendMainMenu(ctx);
-        } else {
-            ctx.reply(`Xin chào ${ctx.from.first_name || 'bạn'}! \n\n🤖 *E-NG Systems Bot*\nVui lòng đăng nhập để sử dụng hệ thống.\nCú pháp: \`/login email password\``, { parse_mode: 'Markdown' });
+        try {
+            if (sessionStore.has(userId)) {
+                console.log('LOG: User has session, sending main menu');
+                await sendMainMenu(ctx);
+            } else {
+                console.log('LOG: User no session, sending login prompt');
+                await ctx.reply(`Xin chào ${ctx.from.first_name || 'bạn'}! \n\n🤖 *E-NG Systems Bot*\nVui lòng đăng nhập để sử dụng hệ thống.\nCú pháp: \`/login email password\``, { parse_mode: 'Markdown' });
+            }
+            console.log('LOG: /start command handled successfully');
+        } catch (e: any) {
+            console.error('LOG: Error in /start handler:', e.message);
         }
     });
 
